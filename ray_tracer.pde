@@ -10,9 +10,13 @@ int screen_height = 300;
 float fov;
 PVector bgcolor = new PVector();
 PVector screenPos = new PVector();
-
-
-
+// Store latest reflectance constants
+PVector ka = new PVector(0,0,0);
+PVector kd = new PVector(0,0,0);
+// Arrays to store properties of objects and lights
+Sphere[] objects = new Sphere[20];
+PtLight[] lights = new PtLight[10];
+int numLights=0, numObjects=0;
 
 // global matrix values
 PMatrix3D global_mat;
@@ -85,20 +89,33 @@ void interpreter(String filename) {
     }
     else if (token[0].equals("point_light")) {
       // TODO
-      //float x = float(token[1]);
-      //float y = float(token[2]);
-      //float z = float(token[3]);
-      //float r = float(token[4]);
-      //float g = float(token[5]);
-      //float b = float(token[6]);
+      float x = float(token[1]);
+      float y = float(token[2]);
+      float z = float(token[3]);
+      float r = float(token[4]);
+      float g = float(token[5]);
+      float b = float(token[6]);
       
+      PVector p = new PVector(x,y,z);
+      PVector c = new PVector(r,g,b);
+      
+      lights[numLights] = new PtLight(p,c);
+      numLights++;
+            
       //pointLight(r,g,b,x,y,z);
     }
     else if (token[0].equals("diffuse")) {
       // TODO
+      kd.set(float(token[1]),float(token[2]),float(token[3]));
+      ka.set(float(token[4]),float(token[5]),float(token[6]));
     }    
     else if (token[0].equals("sphere")) {
       // TODO
+      float r = float(token[1]);
+      PVector p = new PVector(float(token[1]),float(token[2]),float(token[3]));
+      
+      objects[numObjects] = new Sphere(p,r,ka,kd);
+      numObjects++;
     }
     else if (token[0].equals("read")) {  // reads input from another file
       interpreter (token[1]);
