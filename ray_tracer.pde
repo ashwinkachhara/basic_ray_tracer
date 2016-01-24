@@ -9,7 +9,8 @@ int screen_height = 300;
 
 float fov;
 PVector bgcolor = new PVector();
-PVector screenPos = new PVector();
+// PVector screenPos = new PVector();
+float winsize=0;
 // Store latest reflectance constants
 PVector ka = new PVector(0,0,0);
 PVector kd = new PVector(0,0,0);
@@ -36,7 +37,7 @@ void setup() {
   printMatrix();
   //resetMatrix();    // you may want to reset the matrix here
 
-  interpreter("rect_test.cli");
+  interpreter("t01.cli");
 }
 
 // Press key 1 to 9 and 0 to run different test cases.
@@ -65,7 +66,9 @@ void keyPressed() {
 //  Note: Function "splitToken()" is only available in processing 1.25 or higher.
 
 void interpreter(String filename) {
-  
+  numObjects = 0;
+  numLights = 0;
+  bgcolor.set(0,0,0);
   String str[] = loadStrings(filename);
   if (str == null) println("Error! Failed to read the file.");
   for (int i=0; i<str.length; i++) {
@@ -76,7 +79,8 @@ void interpreter(String filename) {
     if (token[0].equals("fov")) {
       // TODO
       fov = float(token[1]);
-      screenPos.set(0,0,-screen_width/tan(fov/2));
+      //screenPos.set(0,0,-screen_width/tan(fov/2));
+      winsize = tan(radians(fov/2));
     }
     else if (token[0].equals("background")) {
       // TODO
@@ -112,7 +116,7 @@ void interpreter(String filename) {
     else if (token[0].equals("sphere")) {
       // TODO
       float r = float(token[1]);
-      PVector p = new PVector(float(token[1]),float(token[2]),float(token[3]));
+      PVector p = new PVector(float(token[2]),float(token[3]),float(token[4]));
       
       objects[numObjects] = new Sphere(p,r,ka,kd);
       numObjects++;
@@ -135,7 +139,72 @@ void interpreter(String filename) {
     }
     else if (token[0].equals("write")) {
       // save the current image to a .png file
+      loadPixels();
+      println(numObjects);
+      println(numLights);
+      println(objects[0].pos);
+      println(lights[0].pos);
+      println(objects[0].radius);
+      //println(width);
+      //println(height);
+      //scale(-1,1);
+      for (int x=0; x<width; x++){
+        for (int y=0; y<height; y++){
+          //println("Iterating over pixels");
+          //println(winsize);
+          float x1 = (x - screen_width*1.0/2)*(winsize*2.0/(1.0*screen_width));
+          float y1 = (y - screen_width*1.0/2)*(winsize*2.0/(1.0*screen_width));
+          PVector rayP = new PVector(x1,y1,-1);
+          //if (x%10==0 && y%10==0) println (x+" "+y+" "+rayP);
+          
+          float minT = MAX_INT; int obIndex=0;
+          boolean found = false;
+          
+          //println("Iterating over objects");
+          for (int o=0;o<numObjects;o++){
+            //does object[i] and rayP intersect at any point(s)?
+              //if so, are the points visible from any light source
+            //print(x+" "+y+" "+rayP+" ");
+            float t = objects[o].intersects(rayP);
+            if (t > 0 && t<minT){
+              //println(t);
+              found = true;
+              minT = t;
+              obIndex = o;
+            }
+          }
+          if (found){
+            //set(x,y,color(1,1,1));
+            
+            PVector pxcolor = new PVector(0,0,0);
+            PVector P = rayP.copy();
+            P.mult(minT);
+            PVector normal = objects[obIndex].getNormal(P);
+            normal.normalize();
+            
+            //println("Iterating over lights");
+            for (int l=0; l<numLights;l++){
+              pxcolor.add(objects[obIndex].calcAmbient(l));
+              if (lights[l].visible(P,normal)){
+                //println("visible");
+                pxcolor.add(objects[obIndex].calcDiffuse(P,normal,l));  
+              }
+            }
+            //pixels[loc] = color(pxcolor.x,pxcolor.y,pxcolor.z);
+            set(x,299 - y,color(pxcolor.x,pxcolor.y,pxcolor.z));
+            //println("pxdone");
+            
+          } else{
+            //pixels[loc] = color(bgcolor.x,bgcolor.y,bgcolor.z);
+            set(x,299 - y,color(bgcolor.x,bgcolor.y,bgcolor.z));
+            //println("bgdone");
+          }
+        }        
+      }
+      println("All done");
+      
       save(token[1]);  
+      
     }
   }
 }

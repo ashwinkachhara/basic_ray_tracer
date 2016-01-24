@@ -9,4 +9,10 @@ class PtLight{
   
   PtLight(){
   }
+  
+  boolean visible(PVector pt, PVector normal){
+    PVector v1 = PVector.sub(pos,pt);
+    float d = v1.dot(normal);
+    return d>0;
+  }
 }
