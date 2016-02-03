@@ -39,6 +39,30 @@ class Sphere{
     }
   }
   
+  float intersects(PVector d, PVector P){
+    float b = -2*((pos.x-P.x)*d.x+(pos.y-P.y)*d.y+(pos.z-P.z)*d.z);
+    float a = d.magSq();
+    float c = sq(P.x-pos.x)+sq(P.y-pos.y)+sq(P.z-pos.z)-radius*radius;
+    //print(a+" "+b+" "+c+" ");
+    if (b*b < 4*a*c){
+      //println(-1);
+      return -1000;
+    }
+    float t1 = (-b+sqrt(1.0*b*b-4.0*a*c))/(2.0*a);
+    float t2 = (-b-sqrt(1.0*b*b-4.0*a*c))/(2.0*a);
+    //println(t1," ",t2);
+    
+    if (t1<0 && t2<0){
+      return -1000;
+    } else if (t1>0 && t2>0){
+      return min(t1,t2);
+    } else if (t1>0){
+      return t1;
+    } else {
+      return t2;
+    }
+  }
+  
   PVector getNormal(PVector P){
     return PVector.sub(P,pos).normalize();
   }

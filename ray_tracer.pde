@@ -185,7 +185,7 @@ void interpreter(String filename) {
             //println("Iterating over lights");
             for (int l=0; l<numLights;l++){
               pxcolor.add(objects[obIndex].calcAmbient(l));
-              if (lights[l].visible(P,normal)){
+              if (lights[l].visible(P,normal,obIndex)){
                 //println("visible");
                 pxcolor.add(objects[obIndex].calcDiffuse(P,normal,l));  
               }
