@@ -16,7 +16,7 @@ class PtLight{
     //return d>0;
     
     if (d<0)
-      return false;
+      return (objects[obIndex] instanceof Polygon);
     else{
       boolean found = false;
      for (int o=0;o<numObjects;o++){

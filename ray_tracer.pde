@@ -12,12 +12,16 @@ PVector bgcolor = new PVector();
 // PVector screenPos = new PVector();
 float winsize=0;
 // Store latest reflectance constants
-PVector ka = new PVector(0,0,0);
-PVector kd = new PVector(0,0,0);
+PVector ka = new PVector(0, 0, 0);
+PVector kd = new PVector(0, 0, 0);
 // Arrays to store properties of objects and lights
-Sphere[] objects = new Sphere[20];
+Shape[] objects = new Shape[2000];
 PtLight[] lights = new PtLight[10];
 int numLights=0, numObjects=0;
+
+PVector[] polyVerts = new PVector[3];
+int curVert = 0;
+boolean poly = false;
 
 // global matrix values
 PMatrix3D global_mat;
@@ -25,18 +29,25 @@ float[] gmat = new float[16];  // global matrix values
 
 // Some initializations for the scene.
 
+void reInit(){
+  numObjects = 0;
+  numLights = 0;
+  bgcolor.set(0, 0, 0);
+  resetMatrix();
+}
+
 void setup() {
   size (300, 300, P3D);  // use P3D environment so that matrix commands work properly
   noStroke();
   colorMode (RGB, 1.0);
   background (0, 0, 0);
-  
+
   // grab the global matrix values (to use later when drawing pixels)
   PMatrix3D global_mat = (PMatrix3D) getMatrix();
   global_mat.get(gmat);  
   printMatrix();
   //resetMatrix();    // you may want to reset the matrix here
-
+  reInit();
   interpreter("t01.cli");
 }
 
@@ -44,17 +55,53 @@ void setup() {
 
 void keyPressed() {
   switch(key) {
-    case '1':  interpreter("t01.cli"); break;
-    case '2':  interpreter("t02.cli"); break;
-    case '3':  interpreter("t03.cli"); break;
-    case '4':  interpreter("t04.cli"); break;
-    case '5':  interpreter("t05.cli"); break;
-    case '6':  interpreter("t06.cli"); break;
-    case '7':  interpreter("t07.cli"); break;
-    case '8':  interpreter("t08.cli"); break;
-    case '9':  interpreter("t09.cli"); break;
-    case '0':  interpreter("t10.cli"); break;
-    case 'q':  exit(); break;
+  case '1':
+    reInit();
+    interpreter("t01.cli"); 
+    break;
+  case '2':  
+    reInit();
+    interpreter("t02.cli"); 
+    break;
+  case '3':  
+    reInit();
+    interpreter("t03.cli"); 
+    break;
+  case '4':  
+    reInit();
+    interpreter("t04.cli"); 
+    break;
+  case '5':  
+    reInit();
+    interpreter("t05.cli"); 
+    break;
+  case '6':  
+    reInit();
+    interpreter("t06.cli"); 
+    break;
+  case '7':  
+    reInit();
+    interpreter("t07.cli"); 
+    break;
+  case '8':  
+    reInit();
+    interpreter("t08.cli"); 
+    break;
+  case '9':  
+    reInit();
+    interpreter("t09.cli"); 
+    break;
+  case '0':  
+    reInit();
+    interpreter("t10.cli"); 
+    break;
+  case 't':
+    reInit();
+    interpreter("test.cli");
+    break;
+  case 'q':  
+    exit(); 
+    break;
   }
 }
 
@@ -66,32 +113,29 @@ void keyPressed() {
 //  Note: Function "splitToken()" is only available in processing 1.25 or higher.
 
 void interpreter(String filename) {
-  numObjects = 0;
-  numLights = 0;
-  bgcolor.set(0,0,0);
   String str[] = loadStrings(filename);
+  if (filename.charAt(0) == 't' && filename.charAt(1) == '0')
+  
+  println(filename);
   if (str == null) println("Error! Failed to read the file.");
   for (int i=0; i<str.length; i++) {
-    
+  
     String[] token = splitTokens(str[i], " "); // Get a line and parse tokens.
     if (token.length == 0) continue; // Skip blank line.
-    
+
     if (token[0].equals("fov")) {
       // TODO
       fov = float(token[1]);
       //screenPos.set(0,0,-screen_width/tan(fov/2));
       winsize = tan(radians(fov/2));
-    }
-    else if (token[0].equals("background")) {
+    } else if (token[0].equals("background")) {
       // TODO
       float r = float(token[1]);
       float g = float(token[2]);
       float b = float(token[3]);
-      bgcolor.set(r,g,b);
+      bgcolor.set(r, g, b);
       //background(r,g,b);
-      
-    }
-    else if (token[0].equals("point_light")) {
+    } else if (token[0].equals("point_light")) {
       // TODO
       float x = float(token[1]);
       float y = float(token[2]);
@@ -99,112 +143,193 @@ void interpreter(String filename) {
       float r = float(token[4]);
       float g = float(token[5]);
       float b = float(token[6]);
-      
-      PVector p = new PVector(x,y,z);
-      PVector c = new PVector(r,g,b);
-      
-      lights[numLights] = new PtLight(p,c);
+
+      PVector p = new PVector(x, y, z);
+      PVector c = new PVector(r, g, b);
+
+      lights[numLights] = new PtLight(p, c);
       numLights++;
-            
+
       //pointLight(r,g,b,x,y,z);
-    }
-    else if (token[0].equals("diffuse")) {
+    } else if (token[0].equals("diffuse")) {
       // TODO
-      kd.set(float(token[1]),float(token[2]),float(token[3]));
-      ka.set(float(token[4]),float(token[5]),float(token[6]));
-    }    
-    else if (token[0].equals("sphere")) {
+      kd.set(float(token[1]), float(token[2]), float(token[3]));
+      ka.set(float(token[4]), float(token[5]), float(token[6]));
+    } else if (token[0].equals("sphere")) {
       // TODO
       float r = float(token[1]);
-      PVector p = new PVector(float(token[2]),float(token[3]),float(token[4]));
+      PVector p = new PVector(float(token[2]), float(token[3]), float(token[4]));
       
-      objects[numObjects] = new Sphere(p,r,ka,kd);
+      PMatrix3D mat = (PMatrix3D) getMatrix();
+      PVector Pp = new PVector(0,0,0);
+      
+      mat.mult(p,Pp);
+      
+
+      objects[numObjects] = new Sphere(Pp, r, ka, kd);
       numObjects++;
-    }
-    else if (token[0].equals("read")) {  // reads input from another file
+    } else if (token[0].equals("read")) {  // reads input from another file
+      println("Before read");
       interpreter (token[1]);
-    }
-    else if (token[0].equals("color")) {  // example command -- not part of ray tracer
+      println("After read");
+    } else if (token[0].equals("color")) {  // example command -- not part of ray tracer
       float r = float(token[1]);
       float g = float(token[2]);
       float b = float(token[3]);
       fill(r, g, b);
-    }
-    else if (token[0].equals("rect")) {  // example command -- not part of ray tracer
+    } else if (token[0].equals("rect")) {  // example command -- not part of ray tracer
       float x0 = float(token[1]);
       float y0 = float(token[2]);
       float x1 = float(token[3]);
       float y1 = float(token[4]);
       rect(x0, screen_height-y1, x1-x0, y1-y0);
-    }
-    else if (token[0].equals("write")) {
+    } else if (token[0].equals("begin")) {
+      poly = true;
+    } else if (token[0].equals("vertex")) {
+      if (poly && curVert < 3){
+        
+        polyVerts[curVert] = new PVector(float(token[1]),float(token[2]),float(token[3]));
+        curVert++;
+      }
+    } else if (token[0].equals("end")) {
+      PMatrix3D mat = (PMatrix3D) getMatrix();
+      PVector[] polyV = new PVector[3];
+      for (int ii=0;ii<3;ii++){
+        polyV[ii] = new PVector(0,0,0);
+        mat.mult(polyVerts[ii],polyV[ii]);
+      }
+      //println("Ka: "+ka.x+" "+ka.y+" "+ka.z);
+      //println("Kd: "+kd.x+" "+kd.y+" "+kd.z);
+      objects[numObjects] = new Polygon(polyV[0],polyV[1],polyV[2], ka, kd);
+      numObjects++;
+      curVert = 0;
+      poly = false;
+    } else if (token[0].equals("push")) {
+      //PMatrix3D mat = (PMatrix3D) getMatrix();
+      //mat.print();
+      pushMatrix();
+    } else if (token[0].equals("pop")) {
+      popMatrix();
+    } else if (token[0].equals("translate")) {
+      translate(float(token[1]), float(token[2]), float(token[3]));
+    } else if (token[0].equals("scale")) {
+      scale(float(token[1]), float(token[2]), float(token[3]));
+    } else if (token[0].equals("rotate")) {
+      //rotate(float(token[1]), float(token[2]), float(token[3]));
+        float angle = radians(float(token[1]));
+        PVector axis = new PVector(float(token[2]),float(token[3]),float(token[4]));
+        axis.normalize();
+        //float u = axis.x;
+        //float v = axis.y;
+        //float w = axis.z;
+        //float c = cos(radians(angle));
+        //float s = sin(radians(angle));
+        //// Rotation by angle around axis. REF: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+        //applyMatrix(sq(u)+(1-sq(u))*c,   u*v*(1-c)-w*s,       u*w*(1-c)+v*s,        0,
+        //            u*v*(1-c)+w*s,       sq(v) + (1-sq(v))*c, v*w*(1-c)-u*s,        0,
+        //            u*w*(1-c)-v*s,       v*w*(1-c)+u*s,       sq(w) + (1-sq(w))*c,  0,
+        //            0,                   0,                   0,                    1
+        //            );
+        float y,p,r;
+        
+        if (axis.x*axis.y*(1-cos(angle)) + axis.z*sin(angle) > 0.998){
+          y = 2*atan2(axis.x*sin(angle/2),cos(angle/2));
+          p = PI/2;
+          r = 0;
+        } else if (axis.x*axis.y*(1-cos(angle)) + axis.z*sin(angle) < -0.998){
+          y = -2*atan2(axis.x*sin(angle/2),cos(angle/2));
+          p = -PI/2;
+          r = 0;
+        } else{
+          float[] q = {axis.x*sin(angle/2),axis.y*sin(angle/2),axis.z*sin(angle/2),cos(angle/2)};
+          y = atan2(q[0]*q[2]+q[1]*q[3],-(q[1]*q[2]-q[0]*q[3]));
+          p = acos(-sq(q[0])-sq(q[1])+sq(q[2])+sq(q[3]));
+          r = atan2(q[0]*q[2]-q[1]*q[3], q[1]*q[2]+q[0]*q[3]);
+        }
+        println("Euler: "+y+" "+p+" "+r);
+        rotateX(y);
+        rotateY(p);
+        rotateZ(r);
+        
+    } else if (token[0].equals("write")) {
       // save the current image to a .png file
+      println("Num Objects: "+numObjects);
+      objects[0].printval();
       loadPixels();
-      println(numObjects);
-      println(numLights);
-      println(objects[0].pos);
-      println(lights[0].pos);
-      println(objects[0].radius);
+      //println(numObjects);
+      println("Lights: "+numLights);
+      //println(objects[0].pos);
+      //println(lights[0].pos);
+      //println(objects[0].radius);
       //println(width);
       //println(height);
       //scale(-1,1);
-      for (int x=0; x<width; x++){
-        for (int y=0; y<height; y++){
+      int foundIndex = 0, unFoundIndex = 0;
+      
+      for (int x=0; x<width; x++) {
+        for (int y=0; y<height; y++) {
           //println("Iterating over pixels");
           //println(winsize);
           float x1 = (x - screen_width*1.0/2)*(winsize*2.0/(1.0*screen_width));
           float y1 = (y - screen_width*1.0/2)*(winsize*2.0/(1.0*screen_width));
-          PVector rayP = new PVector(x1,y1,-1);
+          PVector rayP = new PVector(x1, y1, -1);
           //if (x%10==0 && y%10==0) println (x+" "+y+" "+rayP);
-          
-          float minT = MAX_INT; int obIndex=0;
+
+          float minT = MAX_INT; 
+          int obIndex=0;
           boolean found = false;
-          
+
           //println("Iterating over objects");
-          for (int o=0;o<numObjects;o++){
+          for (int o=0; o<numObjects; o++) {
             //does object[i] and rayP intersect at any point(s)?
-              //if so, are the points visible from any light source
+            //if so, are the points visible from any light source
             //print(x+" "+y+" "+rayP+" ");
-            float t = objects[o].intersects(rayP);
-            if (t > 0 && t<minT){
+            float t = objects[o].intersects(rayP, new PVector(0, 0, 0));
+            if (t > 0 && t<minT) {
               //println(t);
               found = true;
               minT = t;
               obIndex = o;
             }
           }
-          if (found){
+          if (found) {
             //set(x,y,color(1,1,1));
-            
-            PVector pxcolor = new PVector(0,0,0);
+            foundIndex++;
+            //println("found: "+obIndex);
+            PVector pxcolor = new PVector(0, 0, 0);
             PVector P = rayP.copy();
             P.mult(minT);
             PVector normal = objects[obIndex].getNormal(P);
             normal.normalize();
-            
+
             //println("Iterating over lights");
-            for (int l=0; l<numLights;l++){
+            
+            for (int l=0; l<numLights; l++) {
               pxcolor.add(objects[obIndex].calcAmbient(l));
-              if (lights[l].visible(P,normal,obIndex)){
+              //println("Ambient: "+pxcolor.x+" "+pxcolor.y+" "+pxcolor.z);
+              if (lights[l].visible(P, normal, obIndex)) {
                 //println("visible");
-                pxcolor.add(objects[obIndex].calcDiffuse(P,normal,l));  
+                //println(lights[l].visible(P,normal,obIndex));
+                pxcolor.add(objects[obIndex].calcDiffuse(P, normal, l));
               }
             }
             //pixels[loc] = color(pxcolor.x,pxcolor.y,pxcolor.z);
-            set(x,299 - y,color(pxcolor.x,pxcolor.y,pxcolor.z));
+            set(x, 299 - y, color(pxcolor.x, pxcolor.y, pxcolor.z));
             //println("pxdone");
-            
-          } else{
+            //println("Color: "+pxcolor.x+" "+pxcolor.y+" "+pxcolor.z);
+          } else {
+            unFoundIndex++;
+            //println("not found");
             //pixels[loc] = color(bgcolor.x,bgcolor.y,bgcolor.z);
-            set(x,299 - y,color(bgcolor.x,bgcolor.y,bgcolor.z));
+            set(x, 299 - y, color(bgcolor.x, bgcolor.y, bgcolor.z));
             //println("bgdone");
           }
-        }        
+        }
       }
-      println("All done");
-      
-      save(token[1]);  
-      
+      println("Found: "+foundIndex+" UnFound: "+unFoundIndex);
+      println("DONE");
+
+      save(token[1]);
     }
   }
 }
