@@ -29,7 +29,7 @@ float[] gmat = new float[16];  // global matrix values
 
 // Some initializations for the scene.
 
-void reInit(){
+void reInit() {
   numObjects = 0;
   numLights = 0;
   bgcolor.set(0, 0, 0);
@@ -115,11 +115,11 @@ void keyPressed() {
 void interpreter(String filename) {
   String str[] = loadStrings(filename);
   if (filename.charAt(0) == 't' && filename.charAt(1) == '0')
-  
-  println(filename);
+
+    println(filename);
   if (str == null) println("Error! Failed to read the file.");
   for (int i=0; i<str.length; i++) {
-  
+
     String[] token = splitTokens(str[i], " "); // Get a line and parse tokens.
     if (token.length == 0) continue; // Skip blank line.
 
@@ -146,8 +146,13 @@ void interpreter(String filename) {
 
       PVector p = new PVector(x, y, z);
       PVector c = new PVector(r, g, b);
+      
+      PMatrix3D mat = (PMatrix3D) getMatrix();
+      PVector Lp = new PVector(0, 0, 0);
 
-      lights[numLights] = new PtLight(p, c);
+      mat.mult(p, Lp);
+
+      lights[numLights] = new PtLight(Lp, c);
       numLights++;
 
       //pointLight(r,g,b,x,y,z);
@@ -159,19 +164,19 @@ void interpreter(String filename) {
       // TODO
       float r = float(token[1]);
       PVector p = new PVector(float(token[2]), float(token[3]), float(token[4]));
-      
+
       PMatrix3D mat = (PMatrix3D) getMatrix();
-      PVector Pp = new PVector(0,0,0);
-      
-      mat.mult(p,Pp);
-      
+      PVector Pp = new PVector(0, 0, 0);
+
+      mat.mult(p, Pp);
+
 
       objects[numObjects] = new Sphere(Pp, r, ka, kd);
       numObjects++;
     } else if (token[0].equals("read")) {  // reads input from another file
-      println("Before read");
+      //println("Before read");
       interpreter (token[1]);
-      println("After read");
+      //println("After read");
     } else if (token[0].equals("color")) {  // example command -- not part of ray tracer
       float r = float(token[1]);
       float g = float(token[2]);
@@ -186,21 +191,21 @@ void interpreter(String filename) {
     } else if (token[0].equals("begin")) {
       poly = true;
     } else if (token[0].equals("vertex")) {
-      if (poly && curVert < 3){
-        
-        polyVerts[curVert] = new PVector(float(token[1]),float(token[2]),float(token[3]));
+      if (poly && curVert < 3) {
+
+        polyVerts[curVert] = new PVector(float(token[1]), float(token[2]), float(token[3]));
         curVert++;
       }
     } else if (token[0].equals("end")) {
       PMatrix3D mat = (PMatrix3D) getMatrix();
       PVector[] polyV = new PVector[3];
-      for (int ii=0;ii<3;ii++){
-        polyV[ii] = new PVector(0,0,0);
-        mat.mult(polyVerts[ii],polyV[ii]);
+      for (int ii=0; ii<3; ii++) {
+        polyV[ii] = new PVector(0, 0, 0);
+        mat.mult(polyVerts[ii], polyV[ii]);
       }
       //println("Ka: "+ka.x+" "+ka.y+" "+ka.z);
       //println("Kd: "+kd.x+" "+kd.y+" "+kd.z);
-      objects[numObjects] = new Polygon(polyV[0],polyV[1],polyV[2], ka, kd);
+      objects[numObjects] = new Polygon(polyV[0], polyV[1], polyV[2], ka, kd);
       numObjects++;
       curVert = 0;
       poly = false;
@@ -215,49 +220,30 @@ void interpreter(String filename) {
     } else if (token[0].equals("scale")) {
       scale(float(token[1]), float(token[2]), float(token[3]));
     } else if (token[0].equals("rotate")) {
-      //rotate(float(token[1]), float(token[2]), float(token[3]));
-        float angle = radians(float(token[1]));
-        PVector axis = new PVector(float(token[2]),float(token[3]),float(token[4]));
-        axis.normalize();
-        //float u = axis.x;
-        //float v = axis.y;
-        //float w = axis.z;
-        //float c = cos(radians(angle));
-        //float s = sin(radians(angle));
-        //// Rotation by angle around axis. REF: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
-        //applyMatrix(sq(u)+(1-sq(u))*c,   u*v*(1-c)-w*s,       u*w*(1-c)+v*s,        0,
-        //            u*v*(1-c)+w*s,       sq(v) + (1-sq(v))*c, v*w*(1-c)-u*s,        0,
-        //            u*w*(1-c)-v*s,       v*w*(1-c)+u*s,       sq(w) + (1-sq(w))*c,  0,
-        //            0,                   0,                   0,                    1
-        //            );
-        float y,p,r;
-        
-        if (axis.x*axis.y*(1-cos(angle)) + axis.z*sin(angle) > 0.998){
-          y = 2*atan2(axis.x*sin(angle/2),cos(angle/2));
-          p = PI/2;
-          r = 0;
-        } else if (axis.x*axis.y*(1-cos(angle)) + axis.z*sin(angle) < -0.998){
-          y = -2*atan2(axis.x*sin(angle/2),cos(angle/2));
-          p = -PI/2;
-          r = 0;
-        } else{
-          float[] q = {axis.x*sin(angle/2),axis.y*sin(angle/2),axis.z*sin(angle/2),cos(angle/2)};
-          y = atan2(q[0]*q[2]+q[1]*q[3],-(q[1]*q[2]-q[0]*q[3]));
-          p = acos(-sq(q[0])-sq(q[1])+sq(q[2])+sq(q[3]));
-          r = atan2(q[0]*q[2]-q[1]*q[3], q[1]*q[2]+q[0]*q[3]);
-        }
-        println("Euler: "+y+" "+p+" "+r);
-        rotateX(y);
-        rotateY(p);
-        rotateZ(r);
-        
+      float angle = radians(float(token[1]));
+      PVector axis = new PVector(float(token[2]), float(token[3]), float(token[4]));
+      axis.normalize();
+      float y, p, r;
+
+      // Convert Axis-Angle to Quaternion. REF: https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions
+      float[] q = {cos(angle/2), axis.x*sin(angle/2), axis.y*sin(angle/2), axis.z*sin(angle/2)};
+      
+      // Convert Quaternion to Euler Angles. REF: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+      y = atan2(2*(q[0]*q[1]+q[2]*q[3]), 1-2*(sq(q[1])+sq(q[2])));
+      p = asin(2*(q[0]*q[2]-q[3]*q[1]));
+      r = atan2(2*(q[0]*q[3]+q[1]*q[2]), 1-2*(sq(q[2])+sq(q[3])));
+      
+      //println("Euler: "+y+" "+p+" "+r);
+      rotateX(y);
+      rotateY(p);
+      rotateZ(r);
     } else if (token[0].equals("write")) {
       // save the current image to a .png file
       println("Num Objects: "+numObjects);
-      objects[0].printval();
+      //objects[0].printval();
       loadPixels();
       //println(numObjects);
-      println("Lights: "+numLights);
+      //println("Lights: "+numLights);
       //println(objects[0].pos);
       //println(lights[0].pos);
       //println(objects[0].radius);
@@ -265,7 +251,7 @@ void interpreter(String filename) {
       //println(height);
       //scale(-1,1);
       int foundIndex = 0, unFoundIndex = 0;
-      
+
       for (int x=0; x<width; x++) {
         for (int y=0; y<height; y++) {
           //println("Iterating over pixels");
@@ -303,7 +289,7 @@ void interpreter(String filename) {
             normal.normalize();
 
             //println("Iterating over lights");
-            
+
             for (int l=0; l<numLights; l++) {
               pxcolor.add(objects[obIndex].calcAmbient(l));
               //println("Ambient: "+pxcolor.x+" "+pxcolor.y+" "+pxcolor.z);
@@ -326,7 +312,7 @@ void interpreter(String filename) {
           }
         }
       }
-      println("Found: "+foundIndex+" UnFound: "+unFoundIndex);
+      //println("Found: "+foundIndex+" UnFound: "+unFoundIndex);
       println("DONE");
 
       save(token[1]);
